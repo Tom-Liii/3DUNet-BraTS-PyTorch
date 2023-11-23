@@ -127,6 +127,8 @@ class SoftDiceBCEWithLogitsLoss(nn.Module):
             net_output (Tensor): [B, C, ...]
             target (Tensor): [B, C, ...]
         """
+        # print(f'net_output ({type(net_output)}): ')
+        # print(f'target ({type(target)}): ')
         bce_loss = self.bce(net_output, target)
         dsc_loss = self.dsc(net_output, target)
 

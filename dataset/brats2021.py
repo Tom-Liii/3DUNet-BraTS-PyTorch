@@ -75,7 +75,7 @@ class BraTS2021Dataset(Dataset):
     def __getitem__(self, index:int) -> tuple:
         name = self.case_names[index]                           # BraTS2021_00000
         base_dir = join(self.data_root, name, name)             # seg/data/brats21/BraTS2021_00000/BraTS2021_00000
-
+        # print('base_dir: ', base_dir)
         flair = np.array(nib_load(base_dir + '_flair.nii.gz'), dtype='float32')
         t1    = np.array(nib_load(base_dir + '_t1.nii.gz'), dtype='float32')
         t1ce  = np.array(nib_load(base_dir + '_t1ce.nii.gz'), dtype='float32')
@@ -100,6 +100,7 @@ def get_train_loader(args, case_names:list):
     train_transforms = get_brats2021_train_transform(args)
     train_dataset = BraTS2021Dataset(
         data_root=os.path.join(args.data_root, args.dataset), 
+        # data_root=os.path.join(args.data_root), 
         mode='train',
         case_names=case_names, 
         transforms=train_transforms)

@@ -21,7 +21,7 @@ def parse_seg_args():
 
     # data
     parser.add_argument('--dataset', type=str, default='brats2021', help='dataset hint', 
-        choices=['brats2021', 'brats2018'])
+        choices=['brats2021', 'brats2018', 'brats2023'])
     parser.add_argument('--data_root', type=str, default='data/', help='root dir of dataset')
     parser.add_argument('--cases_split', type=str, help='name & split')
     parser.add_argument('--input_channels', '--n_views', type=int, default=4, 

@@ -47,7 +47,23 @@ def train(args, epoch, model, train_loader, loss_fn, optimizer, scheduler, scale
             # forward
             # TODO: adapt to deep supervision
             preds = model(image)
-            bce_loss, dsc_loss = loss_fn(preds, label)
+            # convert preds to monai Tensor
+            # preds = torch.stack(tuple(x_i for x_i in torch.unbind(preds, dim=1)), dim=1)
+            # print(f'preds ({type(preds[0])}): ', len(preds))
+            # print(f'label ({type(label)}): ', len(label))
+            # print(len(preds[0]), len(label[0]), len(label[1]))
+            # print shapes of them
+            # print(f'preds ({type(preds[0])}): ', preds[0].shape)
+            # print(f'label ({type(label[0])}): ', label[0].shape)
+            # print(f'label ({type(label[1])}): ', label[1].shape)
+
+            # stack two elements of label into one tensor with same shape of preds
+            label_stacked = torch.stack(tuple(x_i for x_i in torch.unbind(label, dim=1)), dim=1)  
+            # print(f'label_stacked ({type(label_stacked)}): ', label_stacked.shape)  
+
+            # print(f'preds ({type(preds[0])}): ', preds[0])
+            # print(f'label ({type(label[0])}): ', label[0])
+            bce_loss, dsc_loss = loss_fn(preds[0], label_stacked)
             loss = bce_loss + dsc_loss
 
         # compute gradient and do optimizer step
