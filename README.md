@@ -8,7 +8,7 @@ This repo is a PyTorch implementation of 3D U-Net and Multi-encoder 3D U-Net for
     - `--data_root`: the root of data directory
 - Example command: 
 ```bash
-python train_brats2021.py --dataset brats2023 --data_root ../brats2023/ --cases_split ./data/split/brats2023_split_fold0.csv --epochs 3
+python train_brats2021.py --dataset brats2023 --data_root ../brats2023/ --cases_split ./data/split/brats2023_split_fold0.csv --epochs 3 --eval_freq 1
 ```
 ```bash
 usage: train_brats2021.py [-h] [--comment COMMENT] [--gpus GPUS [GPUS ...]] [--seed SEED] [--num_workers NUM_WORKERS] [--amp]
