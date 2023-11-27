@@ -9,6 +9,7 @@ warnings.filterwarnings("ignore")
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from monai.inferers import sliding_window_inference
 from torch.cuda.amp import GradScaler, autocast
 
@@ -49,8 +50,13 @@ def train(args, epoch, model, train_loader, loss_fn, optimizer, scheduler, scale
             preds = model(image)
             # convert preds to monai Tensor
             # preds = torch.stack(tuple(x_i for x_i in torch.unbind(preds, dim=1)), dim=1)
-            # print(f'preds ({type(preds[0])}): ', len(preds))
-            # print(f'label ({type(label)}): ', len(label))
+            # print(f'preds ({type(preds)}) length: ', len(preds))
+            # count_preds = 0
+            # for pred in preds:
+            #     print(f'preds[{count_preds}] ({type(pred)}) shape: {pred.shape}')
+            #     count_preds += 1
+            # print(f'label ({type(label)}) length: ', len(label))
+            # print(f'label ({type(label)}) shape: {label.shape}')
             # print(len(preds[0]), len(label[0]), len(label[1]))
             # print shapes of them
             # print(f'preds ({type(preds[0])}): ', preds[0].shape)
@@ -58,12 +64,28 @@ def train(args, epoch, model, train_loader, loss_fn, optimizer, scheduler, scale
             # print(f'label ({type(label[1])}): ', label[1].shape)
 
             # stack two elements of label into one tensor with same shape of preds
-            label_stacked = torch.stack(tuple(x_i for x_i in torch.unbind(label, dim=1)), dim=1)  
+            # label_stacked = torch.stack(tuple(x_i for x_i in torch.unbind(label, dim=1)), dim=1)  
             # print(f'label_stacked ({type(label_stacked)}): ', label_stacked.shape)  
 
             # print(f'preds ({type(preds[0])}): ', preds[0])
             # print(f'label ({type(label[0])}): ', label[0])
-            bce_loss, dsc_loss = loss_fn(preds[0], label_stacked)
+            # bce_loss, dsc_loss = loss_fn(preds[0], label_stacked)
+            
+            # print unique of preds
+            # copied_preds = preds[0].cpu()
+            # print(f'preds unique: {np.unique(copied_preds)}')
+            # # print unique of label
+            # copied_label = label[0].cpu()
+            # print(f'label unique: {np.unique(copied_label)}')
+
+            # convert label to one hot embedding
+            label = label.squeeze(1)
+            one_hot_label = F.one_hot(label.long(), num_classes=5).float()
+            one_hot_label = one_hot_label.permute(0, 4, 1, 2, 3)
+            
+            # print(f'one_hot_label shape ({type(one_hot_label)}): {one_hot_label.shape}')
+
+            bce_loss, dsc_loss = loss_fn(preds[0], one_hot_label)
             loss = bce_loss + dsc_loss
 
         # compute gradient and do optimizer step
@@ -143,9 +165,22 @@ def infer(args, epoch, model:nn.Module, infer_loader, writer, logger, mode:str, 
             # post-processing
             seg_map = brats_post_processing(seg_map)
 
+            # print the info of seg_map and label
+            # print(f'seg_map ({type(seg_map)}): ', seg_map.shape)
+            # print(f'label ({type(label)}): ', label.shape)
+            # print(f'brats names: {brats_names}')
+
+            # convert label to one hot embedding
+            label = label.squeeze(1)
+            one_hot_label = F.one_hot(label.long(), num_classes=5).float()
+            one_hot_label = one_hot_label.permute(0, 4, 1, 2, 3)
+
             # calc metric 
-            dice = metrics.dice(seg_map, label)
-            hd95 = metrics.hd95(seg_map, label)
+            dice = metrics.dice(seg_map, one_hot_label)
+            hd95 = metrics.hd95(seg_map, one_hot_label)
+
+            # print(dice)
+            # print(hd95)
 
             # output seg map
             if save_pred:
@@ -157,16 +192,26 @@ def infer(args, epoch, model:nn.Module, infer_loader, writer, logger, mode:str, 
             case_metrics_meter.update(dice, hd95, brats_names, bsz)
 
             # monitor training progress
+            # TODO: modify the metrics to fit in our 4-labels dataset 
+            # ET (label 3): enhancing tumor
+            # TC (label 1): tumor core
+            # WT: whole tumor
+            # CA (label 4): cavity
+            # ED (label 2): edema
             if (i == 0) or (i + 1) % args.print_freq == 0:
                 mean_metrics = case_metrics_meter.mean()
                 logger.info("\t".join([
                     f'{mode.capitalize()}: [{epoch}][{i+1}/{len(infer_loader)}]', str(batch_time), 
-                    f"Dice_WT {dice[:, 1].mean():.3f} ({mean_metrics['Dice_WT']:.3f})",
-                    f"Dice_TC {dice[:, 0].mean():.3f} ({mean_metrics['Dice_TC']:.3f})",
-                    f"Dice_ET {dice[:, 2].mean():.3f} ({mean_metrics['Dice_ET']:.3f})",
-                    f"HD95_WT {hd95[:, 1].mean():7.3f} ({mean_metrics['HD95_WT']:7.3f})",
-                    f"HD95_TC {hd95[:, 0].mean():7.3f} ({mean_metrics['HD95_TC']:7.3f})",
-                    f"HD95_ET {hd95[:, 2].mean():7.3f} ({mean_metrics['HD95_ET']:7.3f})",
+                    f"Dice_BG {dice[:, 0].mean():.3f} ({mean_metrics['Dice_BG']:.3f})", # background
+                    f"Dice_TC {dice[:, 1].mean():.3f} ({mean_metrics['Dice_TC']:.3f})", # tumor core
+                    f"Dice_ED {dice[:, 2].mean():.3f} ({mean_metrics['Dice_ET']:.3f})", # edema
+                    f"Dice_ET {dice[:, 3].mean():.3f} ({mean_metrics['Dice_ET']:.3f})", # enhancing tumor
+                    f"Dice_RC {dice[:, 4].mean():.3f} ({mean_metrics['Dice_ET']:.3f})", # resection cavity
+                    f"HD95_BG {hd95[:, 0].mean():7.3f} ({mean_metrics['HD95_BG']:7.3f})", # background
+                    f"HD95_TC {hd95[:, 1].mean():7.3f} ({mean_metrics['HD95_TC']:7.3f})", # tumor core
+                    f"HD95_ED {hd95[:, 2].mean():7.3f} ({mean_metrics['HD95_ET']:7.3f})", # edema
+                    f"HD95_ET {hd95[:, 3].mean():7.3f} ({mean_metrics['HD95_ET']:7.3f})", # enhancing tumor
+                    f"HD95_RC {hd95[:, 4].mean():7.3f} ({mean_metrics['HD95_ET']:7.3f})", # resection cavity
                 ]))
 
             end = time.time()

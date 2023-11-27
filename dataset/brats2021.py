@@ -19,7 +19,7 @@ def get_brats2021_base_transform():
         RobustZScoreNormalization(keys=['flair', 't1', 't1ce', 't2']),
         transforms.ConcatItemsd(keys=['flair', 't1', 't1ce', 't2'], name='image', dim=0),
         transforms.DeleteItemsd(keys=['flair', 't1', 't1ce', 't2']),
-        transforms.ConvertToMultiChannelBasedOnBratsClassesd(keys='label'),
+        # transforms.ConvertToMultiChannelBasedOnBratsClassesd(keys='label'),
     ]
     return base_transform
 
@@ -75,17 +75,26 @@ class BraTS2021Dataset(Dataset):
     def __getitem__(self, index:int) -> tuple:
         name = self.case_names[index]                           # BraTS2021_00000
         base_dir = join(self.data_root, name, name)             # seg/data/brats21/BraTS2021_00000/BraTS2021_00000
-        print('base_dir: ', base_dir)
+        # print('base_dir: ', base_dir)
         flair = np.array(nib_load(base_dir + '_flair.nii.gz'), dtype='float32')
         t1    = np.array(nib_load(base_dir + '_t1.nii.gz'), dtype='float32')
         t1ce  = np.array(nib_load(base_dir + '_t1ce.nii.gz'), dtype='float32')
         t2    = np.array(nib_load(base_dir + '_t2.nii.gz'), dtype='float32')
         mask  = np.array(nib_load(base_dir + '_seg.nii.gz'), dtype='uint8')  # ground truth
-
+        # print the shape of mask
+        # print(f'mask.shape (before transform): {mask.shape}')
+        # print(f'self.transforms: {self.transforms}')
         item = self.transforms({'flair':flair, 't1':t1, 't1ce':t1ce, 't2':t2, 'label':mask})
+        # print the shape of item
+        # print(f'mask.shape (after transform): {mask.shape}')
+        # print(f'mask unique values: {np.unique(mask)}')
+        
 
         if self.mode == 'train':     # train
             item = item[0]   # [0] for RandCropByPosNegLabeld
+        # print(f'item["image"].shape: {item["image"].shape}')
+        # print(f'item["label"].shape: {item["label"].shape}')
+        # print(f'item["label"] unique values: {np.unique(item["label"])}')
 
         return item['image'], item['label'], index, name
 

@@ -58,7 +58,7 @@ class ProgressMeter(object):
 
 class CaseSegMetricsMeterBraTS(object):
     """Stores segmentation metric (dice & hd95) for every case"""
-    cols = ['Dice_WT', 'Dice_TC', 'Dice_ET', 'HD95_WT', 'HD95_TC', 'HD95_ET']
+    cols = ['Dice_BG', 'Dice_TC', 'Dice_ED', 'Dice_ET', 'Dice_RC', 'HD95_BG', 'HD95_TC', 'HD95_ED', 'HD95_ET', 'HD95_RC']
 
     def __init__(self):
         self.reset()
@@ -67,10 +67,20 @@ class CaseSegMetricsMeterBraTS(object):
         self.cases = pd.DataFrame(columns=self.cols)
 
     def update(self, dice, hd95, names, bsz):
+        # print(self.cases)
+        # print(names)
+        # print(bsz)
+        # print(dice[0, 1])
+        # print(dice[0, 0])
+        # print(dice[0, 2])
+        # print(hd95[0, 1])
+        # print(hd95[0, 0])
+        # print(hd95[0, 2])
+
         for i in range(bsz):
             self.cases.loc[names[i]] = [
-                dice[i, 1], dice[i, 0], dice[i, 2], 
-                hd95[i, 1], hd95[i, 0], hd95[i, 2],
+                dice[i, 0], dice[i, 1], dice[i, 2], dice[i, 3], dice[i, 4],
+                hd95[i, 1], hd95[i, 0], hd95[i, 2], hd95[i, 3], hd95[i, 4],
             ]
 
     def mean(self):
@@ -85,7 +95,7 @@ class CaseSegMetricsMeterBraTS(object):
 
 class LeaderboardBraTS(object):
     """Model selection using leaderboard. """
-    cols = ['Dice_WT', 'Dice_TC', 'Dice_ET', 'HD95_WT', 'HD95_TC', 'HD95_ET']
+    cols = ['Dice_BG', 'Dice_TC', 'Dice_ED', 'Dice_ET', 'Dice_RC', 'HD95_BG', 'HD95_TC', 'HD95_ED', 'HD95_ET', 'HD95_RC']
 
     def __init__(self):
         self.reset()

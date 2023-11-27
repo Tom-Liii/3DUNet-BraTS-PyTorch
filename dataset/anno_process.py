@@ -45,8 +45,8 @@ if __name__ == '__main__':
     # sitk.WriteImage(resampled_image, output_path)
 
 
-    id = 10
-    date = '300118'
+    id = 11
+    date = '050218'
     source_path = f"/home/tom/Documents/y4_t1/fyp/brats2023/annotation_resampled/{id}/{id}_{date}_mask.nii.gz"
     # find all the masks under source path
     masks = [source_path]
@@ -64,7 +64,7 @@ if __name__ == '__main__':
         source_image = sitk.ReadImage(mask)
         source_arr = sitk.GetArrayFromImage(source_image)
         
-        tar_arr = translate_3d_array(source_arr, 5, 30, 0) # x, y, z
+        tar_arr = translate_3d_array(source_arr, 5, 15, -5) # x, y, z
 
         tar_image = sitk.GetImageFromArray(tar_arr)
         tar_image.SetSpacing(source_image.GetSpacing())

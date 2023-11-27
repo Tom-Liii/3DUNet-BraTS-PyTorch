@@ -131,6 +131,6 @@ class SoftDiceBCEWithLogitsLoss(nn.Module):
         # print(f'target ({type(target)}): ')
         bce_loss = self.bce(net_output, target)
         dsc_loss = self.dsc(net_output, target)
-
+        # dsc_loss = 0
         return bce_loss, dsc_loss
 
