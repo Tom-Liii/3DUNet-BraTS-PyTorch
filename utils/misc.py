@@ -155,9 +155,11 @@ def save_brats_nifti(seg_map:Tensor, names:list, mode:str, data_root:str, save_e
         output = seg_map_numpy[b]
         seg_img = np.zeros((H, W, D), dtype=np.uint8)
 
-        seg_img[np.where(output[1, ...] == 1)] = 2      # WT --> ED
-        seg_img[np.where(output[0, ...] == 1)] = 1      # TC --> NCR
-        seg_img[np.where(output[2, ...] == 1)] = 4      # ET --> ET
+        seg_img[np.where(output[1, ...] == 1)] = 1      # TC
+        seg_img[np.where(output[0, ...] == 1)] = 0      # BG
+        seg_img[np.where(output[2, ...] == 1)] = 2      # ED
+        seg_img[np.where(output[3, ...] == 1)] = 3      # ET
+        seg_img[np.where(output[4, ...] == 1)] = 4      # RC 
 
         # random modality is ok
         original_img_path = join(data_root, 'brats2023', names[b], names[b]+f'_t1.nii.gz') # change 'brats2021' to 'brats2023'
